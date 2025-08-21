@@ -108,7 +108,25 @@ async function loadFeed(){
     lines.shift(); // remove header
 
     const posts = lines.map(line => {
-      const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g).map(v => v.replace(/^"|"$/g, ''));
+      const values = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"' && line[i+1] === '"') { // escaped quote
+          current += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          values.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      values.push(current);
+
       return {
         to: values[0]?.trim(),
         type: values[1]?.trim(),
@@ -166,10 +184,15 @@ function renderFeed(posts){
         overlay.innerText = `< ${p.category} Scenario #${p.scenarioNumber} – ${p.scenarioName} >
 
 CATEGORY: ${p.category}
+
 DIFFICULT: ${p.difficulty}
+
 CLEAR CONDITION: ${p.clearCondition}
+
 TIME LIMIT: ${p.timeLimit}
+
 REWARDS: ${p.rewards}
+
 PENALTY FOR FAILURE: ${p.penalty}`;
       }
 
