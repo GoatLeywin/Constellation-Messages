@@ -93,13 +93,15 @@ async function loadFeed(){
     const lines = csvText.trim().split("\n");
     const header = lines.shift().split(",");
     const posts = lines.map(line => {
-      const values = line.split(",");
-      return {
-        to: values[0]?.trim(),
-        text: values[1]?.trim(),
-        time: values[2]?.trim()
-      };
-    });
+  // Matches CSV fields, including quoted ones
+  const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g).map(v => v.replace(/^"|"$/g, ''));
+  return {
+    to: values[0]?.trim(),
+    text: values[1]?.trim(),
+    time: values[2]?.trim()
+  };
+});
+
 
     posts.sort((a, b) => new Date(b.time) - new Date(a.time));
 
