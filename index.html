@@ -52,7 +52,7 @@ function logDebug(msg){
   debugPanel.scrollTop = debugPanel.scrollHeight;
 }
 
-// --- USERS (hardcoded) ---
+// --- USERS (hardcoded usernames + passwords) ---
 const USERS = {
   "alice": "pass123",
   "bob": "secret456",
@@ -67,7 +67,6 @@ function login(){
   const u = document.getElementById("user").value.trim();
   const p = document.getElementById("pass").value;
   logDebug(`Login attempt: user="${u}" pass="${p}"`);
-  
   if(USERS[u] && USERS[u] === p){
     currentUser = u;
     document.getElementById("login").style.display = "none";
@@ -95,29 +94,35 @@ async function loadFeed(){
   try {
     const res = await fetch(url);
     const text = await res.text();
-    const json = JSON.parse(text.substr(47).slice(0, -2));
-    
+
+    // Robustly extract JSON from gviz wrapper
+    const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/);
+    if(!match){
+      throw new Error("Could not parse Google Sheets response");
+    }
+    const json = JSON.parse(match[1]);
+
+    // Convert rows to objects
     const posts = json.table.rows.map((r, i) => ({
       to: r.c[0]?.v,
       image: r.c[1]?.v,
       time: r.c[2]?.v
     }));
 
-    logDebug(`Fetched ${posts.length} posts:`);
-    posts.forEach((p, i) => {
-      logDebug(`  [${i}] to="${p.to}" image="${p.image}" time="${p.time}"`);
-    });
+    logDebug(`Fetched ${posts.length} posts from sheet:`);
+    posts.forEach((p, i) => logDebug(`  [${i}] to="${p.to}" image="${p.image}" time="${p.time}"`));
 
+    // Sort newest first
     posts.sort((a, b) => new Date(b.time) - new Date(a.time));
 
     const dataStr = JSON.stringify(posts);
-    if (dataStr !== lastData) {
+    if(dataStr !== lastData){
       lastData = dataStr;
       renderFeed(posts);
     } else {
-      logDebug("Feed unchanged, not re-rendering");
+      logDebug("Feed unchanged, skipping render");
     }
-  } catch (e) {
+  } catch(e){
     logDebug(`Error loading feed: ${e}`);
     console.error("Error loading feed:", e);
   }
@@ -144,5 +149,3 @@ function renderFeed(posts){
 </script>
 </body>
 </html>
-
-
