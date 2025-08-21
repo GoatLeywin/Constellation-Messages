@@ -25,6 +25,20 @@
       padding: 8px;
       z-index: 9999;
     }
+    .text-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff;
+      text-align: left;
+      white-space: pre-line;
+      font-family: monospace;
+      font-size: 18px;
+      text-shadow: 2px 2px 4px #000;
+      width: 90%;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -79,7 +93,7 @@ function login(){
 function startAutoRefresh(){
   logDebug("Starting feed auto-refresh...");
   loadFeed();
-  setInterval(loadFeed, 15000); // refresh every 15s
+  setInterval(loadFeed, 15000);
 }
 
 // --- Fetch posts from Google Sheets (CSV) ---
@@ -91,20 +105,27 @@ async function loadFeed(){
     if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
     const csvText = await res.text();
     const lines = csvText.trim().split("\n");
-    const header = lines.shift().split(",");
-    const posts = lines.map(line => {
-  // Matches CSV fields, including quoted ones
-  const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g).map(v => v.replace(/^"|"$/g, ''));
-  return {
-    to: values[0]?.trim(),
-    text: values[1]?.trim(),
-    time: values[2]?.trim()
-  };
-});
+    lines.shift(); // remove header
 
+    const posts = lines.map(line => {
+      const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g).map(v => v.replace(/^"|"$/g, ''));
+      return {
+        to: values[0]?.trim(),
+        type: values[1]?.trim(),
+        scenarioNumber: values[2]?.trim(),
+        scenarioName: values[3]?.trim(),
+        category: values[4]?.trim(),
+        difficulty: values[5]?.trim(),
+        clearCondition: values[6]?.trim(),
+        timeLimit: values[7]?.trim(),
+        rewards: values[8]?.trim(),
+        penalty: values[9]?.trim(),
+        text: values[10]?.trim(),
+        time: values[11]?.trim()
+      };
+    });
 
     posts.sort((a, b) => new Date(b.time) - new Date(a.time));
-
     logDebug(`Fetched ${posts.length} posts from sheet`);
 
     const dataStr = JSON.stringify(posts);
@@ -118,7 +139,7 @@ async function loadFeed(){
   }
 }
 
-// --- Render feed (base image + text overlay) ---
+// --- Render feed ---
 function renderFeed(posts){
   const feed = document.getElementById("feed");
   feed.innerHTML = "";
@@ -131,28 +152,34 @@ function renderFeed(posts){
       container.style.textAlign = "center";
 
       const img = document.createElement("img");
-      img.src = "images/base.png"; // base image for all posts
       img.style.width = "100%";
       img.style.display = "block";
 
-      const textOverlay = document.createElement("div");
-      textOverlay.innerText = p.text || "";
-      textOverlay.style.position = "absolute";
-      textOverlay.style.top = "50%";
-      textOverlay.style.left = "50%";
-      textOverlay.style.transform = "translate(-50%, -50%)";
-      textOverlay.style.color = "#fff";
-      textOverlay.style.fontSize = "24px";
-      textOverlay.style.textShadow = "2px 2px 4px #000";
-      textOverlay.style.pointerEvents = "none";
+      const overlay = document.createElement("div");
+      overlay.className = "text-overlay";
+
+      if(p.type === "message"){
+        img.src = "images/message.png";
+        overlay.innerText = p.text || "";
+      } else if(p.type === "scenario"){
+        img.src = "images/scenario.png";
+        overlay.innerText = `< ${p.category} Scenario #${p.scenarioNumber} – ${p.scenarioName} >
+
+CATEGORY: ${p.category}
+DIFFICULT: ${p.difficulty}
+CLEAR CONDITION: ${p.clearCondition}
+TIME LIMIT: ${p.timeLimit}
+REWARDS: ${p.rewards}
+PENALTY FOR FAILURE: ${p.penalty}`;
+      }
 
       container.appendChild(img);
-      container.appendChild(textOverlay);
+      container.appendChild(overlay);
       feed.appendChild(container);
     }
   });
 
-  logDebug(`Rendered feed for user="${currentUser}" with text overlays`);
+  logDebug(`Rendered feed for user="${currentUser}"`);
 }
 </script>
 </body>
