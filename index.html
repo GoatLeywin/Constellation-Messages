@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Private Image Feed</title>
+  <style>
+    body { font-family: sans-serif; background:#111; color:#eee; margin:0; }
+    #login { max-width:400px; margin:100px auto; text-align:center; }
+    #feed { max-width:800px; margin:20px auto; display:none; padding:0 16px; }
+    input { padding:8px; margin:6px; border-radius:6px; border:none; }
+    button { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; background:#444; color:#fff; }
+    button:hover { background:#666; }
+    img { max-width:100%; display:block; margin:20px auto; }
+  </style>
+</head>
+<body>
+  <div id="login">
+    <h2>🔒 Sign In</h2>
+    <input id="user" placeholder="User ID" />
+    <input id="pass" type="password" placeholder="Password" />
+    <button onclick="login()">Enter</button>
+    <p id="msg"></p>
+  </div>
+
+  <div id="feed"></div>
+
+<script>
+// --- USERS (hardcoded usernames + passwords) ---
+const USERS = {
+  "alice": "pass123",
+  "bob": "secret456",
+  "owner": "mypassword"
+};
+
+let currentUser = null;
+let lastData = "";
+
+// --- Login ---
+function login(){
+  const u = document.getElementById("user").value.trim();
+  const p = document.getElementById("pass").value;
+  if(USERS[u] && USERS[u] === p){
+    currentUser = u;
+    document.getElementById("login").style.display = "none";
+    document.getElementById("feed").style.display = "block";
+    startAutoRefresh();
+  } else {
+    document.getElementById("msg").innerText = "❌ Invalid login";
+  }
+}
+
+// --- Auto-refresh feed ---
+function startAutoRefresh(){
+  loadFeed();
+  setInterval(loadFeed, 15000); // refresh every 15s
+}
+
+// --- Fetch posts from Google Sheets ---
+async function loadFeed(){
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/gviz/tq?tqx=out:json";
+
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+
+    // Strip Google visualization wrapper
+    const json = JSON.parse(text.substr(47).slice(0, -2));
+
+    // Convert rows to objects
+    const posts = json.table.rows.map(r => ({
+      to: r.c[0]?.v,
+      image: r.c[1]?.v,
+      time: r.c[2]?.v
+    }));
+
+    // Sort newest first
+    posts.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+    const dataStr = JSON.stringify(posts);
+    if (dataStr !== lastData) {
+      lastData = dataStr;
+      renderFeed(posts);
+    }
+  } catch (e) {
+    console.error("Error loading feed:", e);
+  }
+}
+
+// --- Render feed (images only) ---
+function renderFeed(posts){
+  const feed = document.getElementById("feed");
+  feed.innerHTML = "";
+  posts.forEach(p=>{
+    if(p.to === "all" || p.to === currentUser){
+      if(p.image){
+        const img = document.createElement("img");
+        img.src = p.image;
+        feed.appendChild(img);
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
