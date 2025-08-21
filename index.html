@@ -27,17 +27,18 @@
     }
     .text-overlay {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 20px;
       color: #fff;
       text-align: left;
       white-space: pre-line;
       font-family: monospace;
-      font-size: 18px;
       text-shadow: 2px 2px 4px #000;
-      width: 90%;
       pointer-events: none;
+      overflow-wrap: break-word;
     }
   </style>
 </head>
@@ -54,7 +55,7 @@
   <div id="debug"></div>
 
 <script>
-// --- USERS (hardcoded usernames + passwords) ---
+// --- USERS ---
 const USERS = {
   "alice": "pass123",
   "bob": "secret456",
@@ -64,7 +65,7 @@ const USERS = {
 let currentUser = null;
 let lastData = "";
 
-// --- Debugging ---
+// --- Debug ---
 function logDebug(msg){
   const debug = document.getElementById("debug");
   const time = new Date().toLocaleTimeString();
@@ -113,17 +114,10 @@ async function loadFeed(){
       let inQuotes = false;
       for (let i = 0; i < line.length; i++) {
         const char = line[i];
-        if (char === '"' && line[i+1] === '"') { // escaped quote
-          current += '"';
-          i++;
-        } else if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          values.push(current);
-          current = '';
-        } else {
-          current += char;
-        }
+        if (char === '"' && line[i+1] === '"') { current += '"'; i++; }
+        else if (char === '"') { inQuotes = !inQuotes; }
+        else if (char === ',' && !inQuotes) { values.push(current); current = ''; }
+        else { current += char; }
       }
       values.push(current);
 
@@ -143,18 +137,13 @@ async function loadFeed(){
       };
     });
 
-    posts.sort((a, b) => new Date(b.time) - new Date(a.time));
+    posts.sort((a,b) => new Date(b.time) - new Date(a.time));
     logDebug(`Fetched ${posts.length} posts from sheet`);
 
     const dataStr = JSON.stringify(posts);
-    if (dataStr !== lastData) {
-      lastData = dataStr;
-      renderFeed(posts);
-    }
+    if (dataStr !== lastData) { lastData = dataStr; renderFeed(posts); }
 
-  } catch (e) {
-    logDebug(`Error loading feed: ${e}`);
-  }
+  } catch(e) { logDebug(`Error loading feed: ${e}`); }
 }
 
 // --- Render feed ---
@@ -179,6 +168,7 @@ function renderFeed(posts){
       if(p.type === "message"){
         img.src = "images/message.png";
         overlay.innerText = p.text || "";
+        overlay.style.fontSize = "22px";
       } else if(p.type === "scenario"){
         img.src = "images/scenario.png";
         overlay.innerText = `< ${p.category} Scenario #${p.scenarioNumber} – ${p.scenarioName} >
@@ -194,6 +184,7 @@ TIME LIMIT: ${p.timeLimit}
 REWARDS: ${p.rewards}
 
 PENALTY FOR FAILURE: ${p.penalty}`;
+        overlay.style.fontSize = "18px";
       }
 
       container.appendChild(img);
