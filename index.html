@@ -90,16 +90,17 @@ async function loadFeed(){
 function renderFeed(posts){
   const feed = document.getElementById("feed");
   feed.innerHTML = "";
-  posts.forEach(p=>{
+  posts.forEach(p => {
     if(p.to === "all" || p.to === currentUser){
       if(p.image){
         const img = document.createElement("img");
-        img.src = "images/" + p.image; // <-- fix here
+        img.src = "images/" + p.image; // prepend folder
         feed.appendChild(img);
       }
     }
   });
 }
+
 </script>
 </body>
 </html>
