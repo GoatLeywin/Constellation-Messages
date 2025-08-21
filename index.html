@@ -11,6 +11,23 @@
     button { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; background:#444; color:#fff; }
     button:hover { background:#666; }
     img { max-width:100%; display:block; margin:20px auto; }
+
+    /* Debug panel */
+    #debug {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      max-width: 350px;
+      max-height: 300px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.8);
+      color: #0f0;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 8px;
+      z-index: 9999;
+      border-top-left-radius: 8px;
+    }
   </style>
 </head>
 <body>
@@ -23,9 +40,19 @@
   </div>
 
   <div id="feed"></div>
+  <div id="debug"></div>
 
 <script>
-// --- USERS (hardcoded usernames + passwords) ---
+const debugPanel = document.getElementById("debug");
+
+function logDebug(msg){
+  const p = document.createElement("div");
+  p.textContent = msg;
+  debugPanel.appendChild(p);
+  debugPanel.scrollTop = debugPanel.scrollHeight;
+}
+
+// --- USERS (hardcoded) ---
 const USERS = {
   "alice": "pass123",
   "bob": "secret456",
@@ -39,68 +66,81 @@ let lastData = "";
 function login(){
   const u = document.getElementById("user").value.trim();
   const p = document.getElementById("pass").value;
+  logDebug(`Login attempt: user="${u}" pass="${p}"`);
+  
   if(USERS[u] && USERS[u] === p){
     currentUser = u;
     document.getElementById("login").style.display = "none";
     document.getElementById("feed").style.display = "block";
+    logDebug(`Login successful: currentUser="${currentUser}"`);
     startAutoRefresh();
   } else {
     document.getElementById("msg").innerText = "❌ Invalid login";
+    logDebug(`Login failed for user="${u}"`);
   }
 }
 
 // --- Auto-refresh feed ---
 function startAutoRefresh(){
+  logDebug("Starting feed auto-refresh...");
   loadFeed();
-  setInterval(loadFeed, 15000); // refresh every 15s
+  setInterval(loadFeed, 15000);
 }
 
 // --- Fetch posts from Google Sheets ---
 async function loadFeed(){
   const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/gviz/tq?tqx=out:json";
+  logDebug("Fetching feed from Google Sheets...");
 
   try {
     const res = await fetch(url);
     const text = await res.text();
-
-    // Strip Google visualization wrapper
     const json = JSON.parse(text.substr(47).slice(0, -2));
-
-    // Convert rows to objects
-    const posts = json.table.rows.map(r => ({
+    
+    const posts = json.table.rows.map((r, i) => ({
       to: r.c[0]?.v,
       image: r.c[1]?.v,
       time: r.c[2]?.v
     }));
 
-    // Sort newest first
+    logDebug(`Fetched ${posts.length} posts:`);
+    posts.forEach((p, i) => {
+      logDebug(`  [${i}] to="${p.to}" image="${p.image}" time="${p.time}"`);
+    });
+
     posts.sort((a, b) => new Date(b.time) - new Date(a.time));
 
     const dataStr = JSON.stringify(posts);
     if (dataStr !== lastData) {
       lastData = dataStr;
       renderFeed(posts);
+    } else {
+      logDebug("Feed unchanged, not re-rendering");
     }
   } catch (e) {
+    logDebug(`Error loading feed: ${e}`);
     console.error("Error loading feed:", e);
   }
 }
 
-// --- Render feed (images only) ---
+// --- Render feed ---
 function renderFeed(posts){
   const feed = document.getElementById("feed");
   feed.innerHTML = "";
-  posts.forEach(p => {
+  let count = 0;
+  posts.forEach((p, i) => {
+    logDebug(`Processing post [${i}]: to="${p.to}" image="${p.image}"`);
     if(p.to === "all" || p.to === currentUser){
       if(p.image){
         const img = document.createElement("img");
-        img.src = "images/" + p.image; // prepend folder
+        img.src = "images/" + p.image;
         feed.appendChild(img);
+        count++;
       }
     }
   });
+  logDebug(`Rendered ${count} images for user "${currentUser}"`);
 }
-
 </script>
 </body>
 </html>
