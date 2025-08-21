@@ -11,22 +11,13 @@
     button { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; background:#444; color:#fff; }
     button:hover { background:#666; }
     img { max-width:100%; display:block; margin:20px auto; }
-
-    /* Debug panel */
     #debug {
-      position: fixed;
-      bottom: 0;
-      right: 0;
-      max-width: 350px;
-      max-height: 300px;
-      overflow-y: auto;
-      background: rgba(0,0,0,0.8);
-      color: #0f0;
-      font-family: monospace;
-      font-size: 12px;
-      padding: 8px;
-      z-index: 9999;
-      border-top-left-radius: 8px;
+      position: fixed; bottom:0; right:0;
+      max-width:350px; max-height:300px;
+      overflow-y:auto; background:#222; color:#0f0;
+      font-family: monospace; font-size:12px;
+      padding:8px; border-top-left-radius:8px;
+      z-index:9999;
     }
   </style>
 </head>
@@ -43,16 +34,7 @@
   <div id="debug"></div>
 
 <script>
-const debugPanel = document.getElementById("debug");
-
-function logDebug(msg){
-  const p = document.createElement("div");
-  p.textContent = msg;
-  debugPanel.appendChild(p);
-  debugPanel.scrollTop = debugPanel.scrollHeight;
-}
-
-// --- USERS ---
+// --- USERS (hardcoded usernames + passwords) ---
 const USERS = {
   "alice": "pass123",
   "bob": "secret456",
@@ -62,11 +44,20 @@ const USERS = {
 let currentUser = null;
 let lastData = "";
 
+// --- Debug helper ---
+function logDebug(msg){
+  const dbg = document.getElementById("debug");
+  const time = new Date().toLocaleTimeString();
+  dbg.innerHTML += `[${time}] ${msg}<br>`;
+  dbg.scrollTop = dbg.scrollHeight;
+}
+
 // --- Login ---
 function login(){
   const u = document.getElementById("user").value.trim();
   const p = document.getElementById("pass").value;
   logDebug(`Login attempt: user="${u}" pass="${p}"`);
+
   if(USERS[u] && USERS[u] === p){
     currentUser = u;
     document.getElementById("login").style.display = "none";
@@ -83,38 +74,30 @@ function login(){
 function startAutoRefresh(){
   logDebug("Starting feed auto-refresh...");
   loadFeed();
-  setInterval(loadFeed, 15000);
+  setInterval(loadFeed, 15000); // refresh every 15s
 }
 
-// --- Fetch posts from published HTML sheet ---
+// --- Fetch posts from Google Sheets (CSV) ---
 async function loadFeed(){
-  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/pubhtml";
-  logDebug("Fetching feed from Google Sheets (HTML)...");
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/pub?output=csv";
+  logDebug("Fetching feed from Google Sheets (CSV)...");
 
   try {
     const res = await fetch(url);
     const text = await res.text();
 
-    // Parse HTML table
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, "text/html");
-    const table = doc.querySelector("table");
-    if(!table) throw new Error("No table found in sheet HTML");
+    const lines = text.trim().split("\n");
+    if(lines.length < 2) throw new Error("No data rows in sheet");
 
-    const rows = Array.from(table.querySelectorAll("tr")).slice(1); // skip header
-    const posts = rows.map((tr, i) => {
-      const cells = tr.querySelectorAll("td");
-      return {
-        to: cells[0]?.textContent.trim(),
-        image: cells[1]?.textContent.trim(),
-        time: cells[2]?.textContent.trim()
-      };
+    const header = lines.shift().split(",");
+    const posts = lines.map(line=>{
+      const [to,image,time] = line.split(",");
+      return { to: to.trim(), image: image.trim(), time: time.trim() };
     });
 
     logDebug(`Fetched ${posts.length} posts from sheet:`);
     posts.forEach((p,i)=>logDebug(`  [${i}] to="${p.to}" image="${p.image}" time="${p.time}"`));
 
-    // Sort newest first
     posts.sort((a,b)=>new Date(b.time) - new Date(a.time));
 
     const dataStr = JSON.stringify(posts);
@@ -124,29 +107,27 @@ async function loadFeed(){
     } else {
       logDebug("Feed unchanged, skipping render");
     }
+
   } catch(e){
     logDebug(`Error loading feed: ${e}`);
     console.error("Error loading feed:", e);
   }
 }
 
-// --- Render feed ---
+// --- Render feed (images only) ---
 function renderFeed(posts){
   const feed = document.getElementById("feed");
   feed.innerHTML = "";
-  let count = 0;
-  posts.forEach((p,i)=>{
-    logDebug(`Processing post [${i}]: to="${p.to}" image="${p.image}"`);
+  posts.forEach(p => {
     if(p.to === "all" || p.to === currentUser){
       if(p.image){
         const img = document.createElement("img");
-        img.src = "images/" + p.image;
+        img.src = "images/" + p.image; // prepend folder
         feed.appendChild(img);
-        count++;
       }
     }
   });
-  logDebug(`Rendered ${count} images for user "${currentUser}"`);
+  logDebug(`Rendered feed for user="${currentUser}"`);
 }
 </script>
 </body>
