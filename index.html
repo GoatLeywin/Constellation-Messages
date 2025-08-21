@@ -168,8 +168,8 @@ function renderFeed(posts){
         img.src = "images/message.png";
         overlay.innerText = p.text || "";
         overlay.style.fontSize = "22px";
-        overlay.style.paddingTop = "60px";    // down
-        overlay.style.paddingLeft = "40px";   // right
+        overlay.style.paddingTop = "200px";    // down
+        overlay.style.paddingLeft = "100px";   // right
       } else if(p.type === "scenario"){
         img.src = "images/scenario.png";
         overlay.innerText = `< ${p.category} Scenario #${p.scenarioNumber} – ${p.scenarioName} >
@@ -186,8 +186,8 @@ REWARDS: ${p.rewards}
 
 PENALTY FOR FAILURE: ${p.penalty}`;
         overlay.style.fontSize = "18px";
-        overlay.style.paddingTop = "100px";   // further down
-        overlay.style.paddingLeft = "60px";   // further right
+        overlay.style.paddingTop = "120px";   // further down
+        overlay.style.paddingLeft = "100px";   // further right
       }
 
       container.appendChild(img);
