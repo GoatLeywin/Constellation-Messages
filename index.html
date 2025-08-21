@@ -84,7 +84,7 @@ function startAutoRefresh(){
 
 // --- Fetch posts from Google Sheets (CSV) ---
 async function loadFeed(){
-  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/gviz/tq?tqx=out:csv";
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/pub?output=csv";
   logDebug("Fetching feed from Google Sheets (CSV)...");
   try {
     const res = await fetch(url);
