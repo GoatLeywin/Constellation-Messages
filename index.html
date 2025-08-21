@@ -33,7 +33,8 @@
       bottom: 0;
       color: #fff;
       text-align: left;
-      white-space: pre-line;
+      white-space: pre-wrap; /* preserve line breaks and wrap text */
+      word-wrap: break-word; /* break long words if necessary */
       font-family: monospace;
       text-shadow: 2px 2px 4px #000;
       pointer-events: none;
@@ -168,8 +169,8 @@ function renderFeed(posts){
         img.src = "images/message.png";
         overlay.innerText = p.text || "";
         overlay.style.fontSize = "22px";
-        overlay.style.paddingTop = "180px";    // down
-        overlay.style.paddingLeft = "80px";   // right
+        overlay.style.paddingTop = "180px";    // far down
+        overlay.style.paddingLeft = "80px";   // slightly right
       } else if(p.type === "scenario"){
         img.src = "images/scenario.png";
         overlay.innerText = `< ${p.category} Scenario #${p.scenarioNumber} – ${p.scenarioName} >
@@ -186,8 +187,8 @@ REWARDS: ${p.rewards}
 
 PENALTY FOR FAILURE: ${p.penalty}`;
         overlay.style.fontSize = "18px";
-        overlay.style.paddingTop = "120px";   // further down
-        overlay.style.paddingLeft = "140px";   // further right
+        overlay.style.paddingTop = "120px";   // slightly down
+        overlay.style.paddingLeft = "140px";   // far right
       }
 
       container.appendChild(img);
