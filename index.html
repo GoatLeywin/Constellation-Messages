@@ -29,16 +29,18 @@
       position: absolute;
       top: 0;
       left: 0;
-      right: 0;
       bottom: 0;
       color: #fff;
       text-align: left;
-      white-space: pre-wrap; /* preserve line breaks and wrap text */
-      word-wrap: break-word; /* break long words if necessary */
+      white-space: pre-wrap;       /* preserve line breaks and wrap text */
+      word-wrap: break-word;       /* break long words */
       font-family: monospace;
       text-shadow: 2px 2px 4px #000;
       pointer-events: none;
       overflow-wrap: break-word;
+
+      max-width: 70%;              /* limit text width inside the image */
+      padding-right: 15%;          /* leave right margin inside the image */
     }
   </style>
 </head>
@@ -170,7 +172,7 @@ function renderFeed(posts){
         overlay.innerText = p.text || "";
         overlay.style.fontSize = "22px";
         overlay.style.paddingTop = "180px";    // far down
-        overlay.style.paddingLeft = "80px";   // slightly right
+        overlay.style.paddingLeft = "80px";    // slightly right
       } else if(p.type === "scenario"){
         img.src = "images/scenario.png";
         overlay.innerText = `< ${p.category} Scenario #${p.scenarioNumber} – ${p.scenarioName} >
@@ -188,7 +190,7 @@ REWARDS: ${p.rewards}
 PENALTY FOR FAILURE: ${p.penalty}`;
         overlay.style.fontSize = "18px";
         overlay.style.paddingTop = "120px";   // slightly down
-        overlay.style.paddingLeft = "140px";   // far right
+        overlay.style.paddingLeft = "140px";  // far right
       }
 
       container.appendChild(img);
