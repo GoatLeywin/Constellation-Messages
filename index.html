@@ -6,18 +6,24 @@
   <style>
     body { font-family: sans-serif; background:#111; color:#eee; margin:0; }
     #login { max-width:400px; margin:100px auto; text-align:center; }
-    #feed { max-width:800px; margin:20px auto; display:none; padding:0 16px; }
+    #feed { max-width:800px; margin:20px auto; display:none; padding:0 16px; position:relative; }
     input { padding:8px; margin:6px; border-radius:6px; border:none; }
     button { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; background:#444; color:#fff; }
     button:hover { background:#666; }
-    img { max-width:100%; display:block; margin:20px auto; }
+    img { max-width:100%; display:block; }
     #debug {
-      position: fixed; bottom:0; right:0;
-      max-width:350px; max-height:300px;
-      overflow-y:auto; background:#222; color:#0f0;
-      font-family: monospace; font-size:12px;
-      padding:8px; border-top-left-radius:8px;
-      z-index:9999;
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      max-width:400px;
+      max-height:200px;
+      overflow:auto;
+      background: rgba(0,0,0,0.7);
+      color: #0f0;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 8px;
+      z-index: 9999;
     }
   </style>
 </head>
@@ -44,12 +50,12 @@ const USERS = {
 let currentUser = null;
 let lastData = "";
 
-// --- Debug helper ---
+// --- Debugging ---
 function logDebug(msg){
-  const dbg = document.getElementById("debug");
+  const debug = document.getElementById("debug");
   const time = new Date().toLocaleTimeString();
-  dbg.innerHTML += `[${time}] ${msg}<br>`;
-  dbg.scrollTop = dbg.scrollHeight;
+  debug.innerText += `[${time}] ${msg}\n`;
+  debug.scrollTop = debug.scrollHeight;
 }
 
 // --- Login ---
@@ -57,7 +63,6 @@ function login(){
   const u = document.getElementById("user").value.trim();
   const p = document.getElementById("pass").value;
   logDebug(`Login attempt: user="${u}" pass="${p}"`);
-
   if(USERS[u] && USERS[u] === p){
     currentUser = u;
     document.getElementById("login").style.display = "none";
@@ -66,7 +71,7 @@ function login(){
     startAutoRefresh();
   } else {
     document.getElementById("msg").innerText = "❌ Invalid login";
-    logDebug(`Login failed for user="${u}"`);
+    logDebug("Login failed");
   }
 }
 
@@ -77,57 +82,81 @@ function startAutoRefresh(){
   setInterval(loadFeed, 15000); // refresh every 15s
 }
 
-// --- Fetch posts from Google Sheets (CSV) ---
+// --- Fetch posts from Google Sheets ---
 async function loadFeed(){
-  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/pub?output=csv";
-  logDebug("Fetching feed from Google Sheets (CSV)...");
-
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/pubhtml";
+  logDebug("Fetching feed from Google Sheets (HTML)...");
   try {
     const res = await fetch(url);
     const text = await res.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "text/html");
+    const table = doc.querySelector("table");
 
-    const lines = text.trim().split("\n");
-    if(lines.length < 2) throw new Error("No data rows in sheet");
+    if(!table) throw new Error("No table found in sheet HTML");
 
-    const header = lines.shift().split(",");
-    const posts = lines.map(line=>{
-      const [to,image,time] = line.split(",");
-      return { to: to.trim(), image: image.trim(), time: time.trim() };
+    const posts = [];
+    const rows = table.querySelectorAll("tr");
+    rows.forEach((tr, index) => {
+      if(index === 0) return; // skip header
+      const cells = tr.querySelectorAll("td");
+      posts.push({
+        to: cells[0]?.innerText.trim(),
+        text: cells[1]?.innerText.trim(),
+        time: cells[2]?.innerText.trim()
+      });
     });
 
-    logDebug(`Fetched ${posts.length} posts from sheet:`);
-    posts.forEach((p,i)=>logDebug(`  [${i}] to="${p.to}" image="${p.image}" time="${p.time}"`));
+    posts.sort((a, b) => new Date(b.time) - new Date(a.time));
 
-    posts.sort((a,b)=>new Date(b.time) - new Date(a.time));
+    logDebug(`Fetched ${posts.length} posts from sheet`);
 
     const dataStr = JSON.stringify(posts);
-    if(dataStr !== lastData){
+    if (dataStr !== lastData) {
       lastData = dataStr;
       renderFeed(posts);
-    } else {
-      logDebug("Feed unchanged, skipping render");
     }
 
-  } catch(e){
+  } catch (e) {
     logDebug(`Error loading feed: ${e}`);
-    console.error("Error loading feed:", e);
   }
 }
 
-// --- Render feed (images only) ---
+// --- Render feed (base image + text overlay) ---
 function renderFeed(posts){
   const feed = document.getElementById("feed");
   feed.innerHTML = "";
+
   posts.forEach(p => {
     if(p.to === "all" || p.to === currentUser){
-      if(p.image){
-        const img = document.createElement("img");
-        img.src = "images/" + p.image; // prepend folder
-        feed.appendChild(img);
-      }
+      const container = document.createElement("div");
+      container.style.position = "relative";
+      container.style.margin = "20px auto";
+      container.style.textAlign = "center";
+
+      const img = document.createElement("img");
+      img.src = "images/base.png"; // base image for all posts
+      img.style.width = "100%";
+      img.style.display = "block";
+
+      const textOverlay = document.createElement("div");
+      textOverlay.innerText = p.text || "";
+      textOverlay.style.position = "absolute";
+      textOverlay.style.top = "50%";
+      textOverlay.style.left = "50%";
+      textOverlay.style.transform = "translate(-50%, -50%)";
+      textOverlay.style.color = "#fff";
+      textOverlay.style.fontSize = "24px";
+      textOverlay.style.textShadow = "2px 2px 4px #000";
+      textOverlay.style.pointerEvents = "none";
+
+      container.appendChild(img);
+      container.appendChild(textOverlay);
+      feed.appendChild(container);
     }
   });
-  logDebug(`Rendered feed for user="${currentUser}"`);
+
+  logDebug(`Rendered feed for user="${currentUser}" with text overlays`);
 }
 </script>
 </body>
