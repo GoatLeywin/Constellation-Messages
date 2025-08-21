@@ -52,7 +52,7 @@ function logDebug(msg){
   debugPanel.scrollTop = debugPanel.scrollHeight;
 }
 
-// --- USERS (hardcoded usernames + passwords) ---
+// --- USERS ---
 const USERS = {
   "alice": "pass123",
   "bob": "secret456",
@@ -86,34 +86,36 @@ function startAutoRefresh(){
   setInterval(loadFeed, 15000);
 }
 
-// --- Fetch posts from Google Sheets ---
+// --- Fetch posts from published HTML sheet ---
 async function loadFeed(){
-  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/gviz/tq?tqx=out:json";
-  logDebug("Fetching feed from Google Sheets...");
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/pubhtml";
+  logDebug("Fetching feed from Google Sheets (HTML)...");
 
   try {
     const res = await fetch(url);
     const text = await res.text();
 
-    // Robustly extract JSON from gviz wrapper
-    const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/);
-    if(!match){
-      throw new Error("Could not parse Google Sheets response");
-    }
-    const json = JSON.parse(match[1]);
+    // Parse HTML table
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "text/html");
+    const table = doc.querySelector("table");
+    if(!table) throw new Error("No table found in sheet HTML");
 
-    // Convert rows to objects
-    const posts = json.table.rows.map((r, i) => ({
-      to: r.c[0]?.v,
-      image: r.c[1]?.v,
-      time: r.c[2]?.v
-    }));
+    const rows = Array.from(table.querySelectorAll("tr")).slice(1); // skip header
+    const posts = rows.map((tr, i) => {
+      const cells = tr.querySelectorAll("td");
+      return {
+        to: cells[0]?.textContent.trim(),
+        image: cells[1]?.textContent.trim(),
+        time: cells[2]?.textContent.trim()
+      };
+    });
 
     logDebug(`Fetched ${posts.length} posts from sheet:`);
-    posts.forEach((p, i) => logDebug(`  [${i}] to="${p.to}" image="${p.image}" time="${p.time}"`));
+    posts.forEach((p,i)=>logDebug(`  [${i}] to="${p.to}" image="${p.image}" time="${p.time}"`));
 
     // Sort newest first
-    posts.sort((a, b) => new Date(b.time) - new Date(a.time));
+    posts.sort((a,b)=>new Date(b.time) - new Date(a.time));
 
     const dataStr = JSON.stringify(posts);
     if(dataStr !== lastData){
@@ -133,7 +135,7 @@ function renderFeed(posts){
   const feed = document.getElementById("feed");
   feed.innerHTML = "";
   let count = 0;
-  posts.forEach((p, i) => {
+  posts.forEach((p,i)=>{
     logDebug(`Processing post [${i}]: to="${p.to}" image="${p.image}"`);
     if(p.to === "all" || p.to === currentUser){
       if(p.image){
@@ -149,4 +151,3 @@ function renderFeed(posts){
 </script>
 </body>
 </html>
-
