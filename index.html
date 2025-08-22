@@ -65,7 +65,8 @@
 const USERS = {
   "Scott": "madhatter",
   "Dexter": "funk",
-  "Kade": "KRKR-110108"
+  "Kade": "KRKR-110108",
+  "Cole": "ILoveMarley"
 };
 
 let currentUser = null;
@@ -151,7 +152,7 @@ function renderFeed(posts){
   feed.innerHTML = "";
 
   posts.forEach(p => {
-    if(p.to === "all" || p.to === currentUser){
+    if(p.to === "all" || p.to === currentUser || currentUser === "Cole"){
       const container = document.createElement("div");
       container.style.position = "relative";
       container.style.margin = "20px auto";
