@@ -81,8 +81,40 @@ function login(){
     document.getElementById("login").style.display = "none";
     document.getElementById("feed").style.display = "block";
     startAutoRefresh();
+
+    // ✅ If Cole logs in, write a row to the sheet
+    if(currentUser === "Cole"){
+      logColeLogin();
+    }
   } else {
     document.getElementById("msg").innerText = "❌ Invalid login";
+  }
+}
+
+// --- Send row to Google Sheets ---
+async function logColeLogin(){
+  try {
+    await fetch("https://script.google.com/macros/s/AKfycbxQxeSiIWpwP96VYiognZePsGBlIyEFDwdxVf3u0eS3ksukcaPCeuabPUpt_jI7XpD20g/exec", {
+      method: "POST",
+      body: JSON.stringify({
+        to: "Cole",
+        type: "login",
+        scenarioNumber: "",
+        scenarioName: "",
+        category: "System",
+        difficulty: "",
+        clearCondition: "",
+        timeLimit: "",
+        rewards: "",
+        penalty: "",
+        text: "Cole logged in at " + new Date().toLocaleString(),
+        order: Date.now()
+      }),
+      headers: { "Content-Type": "application/json" }
+    });
+    console.log("✅ Cole login recorded in sheet.");
+  } catch(err) {
+    console.error("❌ Failed to log Cole login:", err);
   }
 }
 
