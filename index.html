@@ -18,15 +18,29 @@
       bottom: 0;
       color: #fff;
       text-align: left;
-      white-space: pre-wrap;       /* preserve line breaks and wrap text */
-      word-wrap: break-word;       /* break long words */
+      white-space: pre-wrap;
+      word-wrap: break-word;
       font-family: monospace;
       text-shadow: 2px 2px 4px #000;
       pointer-events: none;
       overflow-wrap: break-word;
+      max-width: 70%;
+      padding-right: 15%;
+    }
 
-      max-width: 70%;              /* limit text width inside the image */
-      padding-right: 15%;          /* leave right margin inside the image */
+    /* --- Refresh notice --- */
+    #refreshNotice {
+      position: fixed;
+      top: 20px;
+      right: 30px;
+      font-family: monospace;
+      font-size: 14px;
+      color: #fff;
+      text-shadow: 1px 1px 3px #000;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+      pointer-events: none;
+      z-index: 9999;
     }
   </style>
 </head>
@@ -40,6 +54,7 @@
   </div>
 
   <div id="feed"></div>
+  <div id="refreshNotice">⟳ feed refreshed</div>
 
 <script>
 // --- USERS ---
@@ -115,7 +130,11 @@ async function loadFeed(){
     posts.sort((a,b) => b.order - a.order);
 
     const dataStr = JSON.stringify(posts);
-    if (dataStr !== lastData) { lastData = dataStr; renderFeed(posts); }
+    if (dataStr !== lastData) { 
+      lastData = dataStr; 
+      renderFeed(posts); 
+      showRefreshNotice();
+    }
 
   } catch(e) {
     console.error("Error loading feed:", e);
@@ -172,6 +191,13 @@ PENALTY FOR FAILURE: ${p.penalty}`;
       feed.appendChild(container);
     }
   });
+}
+
+// --- Fade-in/out refresh notice ---
+function showRefreshNotice(){
+  const notice = document.getElementById("refreshNotice");
+  notice.style.opacity = "1";
+  setTimeout(() => { notice.style.opacity = "0"; }, 2000);
 }
 </script>
 </body>
