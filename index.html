@@ -119,35 +119,6 @@ function login(){
   }
 }
 
-// --- Send row to Google Sheets ---
-async function logColeLogin(){
-  const payload = {
-    to: "Cole",
-    type: "login",
-    scenarioNumber: "",
-    scenarioName: "",
-    category: "System",
-    difficulty: "",
-    clearCondition: "",
-    timeLimit: "",
-    rewards: "",
-    penalty: "",
-    text: "Cole logged in at " + new Date().toLocaleString(),
-    order: Date.now()
-  };
-
-  try {
-    await fetch("https://script.google.com/macros/s/AKfycbxQxeSiIWpwP96VYiognZePsGBlIyEFDwdxVf3u0eS3ksukcaPCeuabPUpt_jI7XpD20g/exec", {
-      method: "POST",
-      body: JSON.stringify(payload),
-      headers: { "Content-Type": "application/json" },
-      mode: "no-cors"
-    });
-  } catch(err) {
-    console.error("❌ Exception while logging Cole login: " + err);
-  }
-}
-
 // --- Cole entry submit ---
 async function submitColeEntry(){
   const type = document.getElementById("entryType").value;
