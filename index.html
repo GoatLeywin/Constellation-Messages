@@ -60,7 +60,7 @@
       font-size: 12px;
       color: #0f0;
       padding: 8px;
-      display: none;
+      display: block; /* ✅ always visible */
       z-index: 10000;
     }
   </style>
@@ -93,7 +93,6 @@ let lastData = "";
 // Debug logging helper
 function debug(msg){
   const dbg = document.getElementById("debug");
-  dbg.style.display = "block";
   const time = new Date().toLocaleTimeString();
   dbg.innerText += `[${time}] ${msg}\n`;
   dbg.scrollTop = dbg.scrollHeight;
