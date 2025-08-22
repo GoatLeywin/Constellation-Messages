@@ -46,22 +46,6 @@
       z-index: 9999;
     }
 
-    #debug {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      max-height: 200px;
-      overflow-y: auto;
-      background: rgba(0,0,0,0.85);
-      font-family: monospace;
-      font-size: 12px;
-      color: #0f0;
-      padding: 8px;
-      display: block;
-      z-index: 10000;
-    }
-
     /* --- Cole control panel --- */
     #colePanel {
       position: fixed;
@@ -89,7 +73,6 @@
 
   <div id="feed"></div>
   <div id="refreshNotice">⟳ feed refreshed</div>
-  <div id="debug"></div>
 
   <!-- Cole control panel -->
   <div id="colePanel">
@@ -116,19 +99,10 @@ const USERS = {
 let currentUser = null;
 let lastData = "";
 
-// Debug logging helper
-function debug(msg){
-  const dbg = document.getElementById("debug");
-  const time = new Date().toLocaleTimeString();
-  dbg.innerText += `[${time}] ${msg}\n`;
-  dbg.scrollTop = dbg.scrollHeight;
-}
-
 // --- Login ---
 function login(){
   const u = document.getElementById("user").value.trim();
   const p = document.getElementById("pass").value;
-  debug(`Login attempt: ${u}`);
   if(USERS[u] && USERS[u] === p){
     currentUser = u;
     document.getElementById("login").style.display = "none";
@@ -136,14 +110,12 @@ function login(){
     startAutoRefresh();
 
     if(currentUser === "Cole"){
-      debug("Cole logged in — enabling control panel + writing to sheet...");
       document.getElementById("colePanel").style.display = "block";
       logColeLogin();
       updateColeForm();
     }
   } else {
     document.getElementById("msg").innerText = "❌ Invalid login";
-    debug("❌ Invalid login attempt");
   }
 }
 
@@ -163,7 +135,6 @@ async function logColeLogin(){
     text: "Cole logged in at " + new Date().toLocaleString(),
     order: Date.now()
   };
-  debug("Cole login payload: " + JSON.stringify(payload));
 
   try {
     await fetch("https://script.google.com/macros/s/AKfycbxQxeSiIWpwP96VYiognZePsGBlIyEFDwdxVf3u0eS3ksukcaPCeuabPUpt_jI7XpD20g/exec", {
@@ -172,9 +143,8 @@ async function logColeLogin(){
       headers: { "Content-Type": "application/json" },
       mode: "no-cors"
     });
-    debug("✅ Cole login recorded (no-cors, opaque response).");
   } catch(err) {
-    debug("❌ Exception while logging Cole login: " + err);
+    console.error("❌ Exception while logging Cole login: " + err);
   }
 }
 
@@ -241,8 +211,6 @@ async function submitColeEntry(){
     };
   }
 
-  debug("Cole submitting: " + JSON.stringify(payload));
-
   try {
     await fetch("https://script.google.com/macros/s/AKfycbxQxeSiIWpwP96VYiognZePsGBlIyEFDwdxVf3u0eS3ksukcaPCeuabPUpt_jI7XpD20g/exec", {
       method: "POST",
@@ -250,9 +218,8 @@ async function submitColeEntry(){
       headers: { "Content-Type": "application/json" },
       mode: "no-cors"
     });
-    debug("✅ Entry submitted to sheet (no-cors).");
   } catch(err){
-    debug("❌ Exception while submitting entry: " + err);
+    console.error("❌ Exception while submitting entry: " + err);
   }
 }
 
@@ -269,7 +236,6 @@ async function loadFeed(){
     const res = await fetch(url);
     if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
     const csvText = await res.text();
-    debug("Feed CSV fetched, length: " + csvText.length);
     const lines = csvText.trim().split("\n");
     lines.shift(); // remove header
 
@@ -309,11 +275,10 @@ async function loadFeed(){
       lastData = dataStr; 
       renderFeed(posts); 
       showRefreshNotice();
-      debug("Feed rendered with " + posts.length + " posts");
     }
 
   } catch(e) {
-    debug("❌ Error loading feed: " + e);
+    console.error("❌ Error loading feed: " + e);
   }
 }
 
