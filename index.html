@@ -148,32 +148,6 @@ async function logColeLogin(){
   }
 }
 
-// --- Cole form builder ---
-function updateColeForm(){
-  const type = document.getElementById("entryType").value;
-  const form = document.getElementById("formFields");
-  form.innerHTML = "";
-
-  if(type === "message"){
-    form.innerHTML = `
-      <label>To: <input id="msgTo" value="all"></label>
-      <label>Text:<br><textarea id="msgText"></textarea></label>
-    `;
-  } else if(type === "scenario"){
-    form.innerHTML = `
-      <label>To: <input id="scenTo" value="all"></label>
-      <label>Scenario # <input id="scenNum"></label>
-      <label>Name <input id="scenName"></label>
-      <label>Category <input id="scenCat"></label>
-      <label>Difficulty <input id="scenDiff"></label>
-      <label>Clear Condition <input id="scenCond"></label>
-      <label>Time Limit <input id="scenTime"></label>
-      <label>Rewards <input id="scenRew"></label>
-      <label>Penalty <input id="scenPen"></label>
-    `;
-  }
-}
-
 // --- Cole entry submit ---
 async function submitColeEntry(){
   const type = document.getElementById("entryType").value;
@@ -218,8 +192,26 @@ async function submitColeEntry(){
       headers: { "Content-Type": "application/json" },
       mode: "no-cors"
     });
+
+    // --- Confirmation and clear form ---
+    alert("✅ Entry submitted successfully!");
+    // Clear the form fields
+    if(type === "message"){
+      document.getElementById("msgText").value = "";
+    } else {
+      document.getElementById("scenNum").value = "";
+      document.getElementById("scenName").value = "";
+      document.getElementById("scenCat").value = "";
+      document.getElementById("scenDiff").value = "";
+      document.getElementById("scenCond").value = "";
+      document.getElementById("scenTime").value = "";
+      document.getElementById("scenRew").value = "";
+      document.getElementById("scenPen").value = "";
+    }
+
   } catch(err){
     console.error("❌ Exception while submitting entry: " + err);
+    alert("❌ Failed to submit entry.");
   }
 }
 
