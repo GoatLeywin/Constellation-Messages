@@ -11,7 +11,7 @@
     body { font-family: sans-serif; background:#111; color:#eee; margin:0; }
     #login { max-width:400px; margin:100px auto; text-align:center; }
     #feed { max-width:800px; margin:20px auto; display:none; padding:0 16px; position:relative; }
-    input { padding:8px; margin:6px; border-radius:6px; border:none; }
+    input, select, textarea { padding:6px; margin:6px; border-radius:6px; border:none; }
     button { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; background:#444; color:#fff; }
     button:hover { background:#666; }
     img { max-width:100%; display:block; }
@@ -32,7 +32,6 @@
       padding-right: 15%;
     }
 
-    /* --- Refresh notice --- */
     #refreshNotice {
       position: fixed;
       top: 20px;
@@ -47,7 +46,6 @@
       z-index: 9999;
     }
 
-    /* --- Debug panel --- */
     #debug {
       position: fixed;
       bottom: 0;
@@ -60,9 +58,24 @@
       font-size: 12px;
       color: #0f0;
       padding: 8px;
-      display: block; /* ✅ always visible */
+      display: block;
       z-index: 10000;
     }
+
+    /* --- Cole control panel --- */
+    #colePanel {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.9);
+      padding: 12px;
+      border-radius: 8px;
+      display: none;
+      z-index: 20000;
+    }
+    #colePanel h3 { margin: 0 0 8px 0; font-size: 16px; }
+    #colePanel label { display: block; margin-top: 6px; font-size: 13px; }
+    #colePanel textarea { width: 200px; height: 60px; }
   </style>
 </head>
 <body>
@@ -77,6 +90,19 @@
   <div id="feed"></div>
   <div id="refreshNotice">⟳ feed refreshed</div>
   <div id="debug"></div>
+
+  <!-- Cole control panel -->
+  <div id="colePanel">
+    <h3>📝 New Entry</h3>
+    <label>Type:
+      <select id="entryType" onchange="updateColeForm()">
+        <option value="message">Message</option>
+        <option value="scenario">Scenario</option>
+      </select>
+    </label>
+    <div id="formFields"></div>
+    <button onclick="submitColeEntry()">Submit</button>
+  </div>
 
 <script>
 // --- USERS ---
@@ -110,8 +136,10 @@ function login(){
     startAutoRefresh();
 
     if(currentUser === "Cole"){
-      debug("Cole logged in — attempting to write row to sheet...");
+      debug("Cole logged in — enabling control panel + writing to sheet...");
+      document.getElementById("colePanel").style.display = "block";
       logColeLogin();
+      updateColeForm();
     }
   } else {
     document.getElementById("msg").innerText = "❌ Invalid login";
@@ -138,22 +166,93 @@ async function logColeLogin(){
   debug("Cole login payload: " + JSON.stringify(payload));
 
   try {
-    const res = await fetch("https://script.google.com/macros/s/AKfycbxQxeSiIWpwP96VYiognZePsGBlIyEFDwdxVf3u0eS3ksukcaPCeuabPUpt_jI7XpD20g/exec", {
+    await fetch("https://script.google.com/macros/s/AKfycbxQxeSiIWpwP96VYiognZePsGBlIyEFDwdxVf3u0eS3ksukcaPCeuabPUpt_jI7XpD20g/exec", {
       method: "POST",
       body: JSON.stringify(payload),
       headers: { "Content-Type": "application/json" },
-      mode: "no-cors"   // avoids CORS error, but response is opaque
+      mode: "no-cors"
     });
-
-    const text = await res.text();
-    debug("Cole login response: " + text);
-    if(res.ok){
-      debug("✅ Cole login recorded in sheet.");
-    } else {
-      debug("❌ Error from API: " + res.status);
-    }
+    debug("✅ Cole login recorded (no-cors, opaque response).");
   } catch(err) {
     debug("❌ Exception while logging Cole login: " + err);
+  }
+}
+
+// --- Cole form builder ---
+function updateColeForm(){
+  const type = document.getElementById("entryType").value;
+  const form = document.getElementById("formFields");
+  form.innerHTML = "";
+
+  if(type === "message"){
+    form.innerHTML = `
+      <label>To: <input id="msgTo" value="all"></label>
+      <label>Text:<br><textarea id="msgText"></textarea></label>
+    `;
+  } else if(type === "scenario"){
+    form.innerHTML = `
+      <label>To: <input id="scenTo" value="all"></label>
+      <label>Scenario # <input id="scenNum"></label>
+      <label>Name <input id="scenName"></label>
+      <label>Category <input id="scenCat"></label>
+      <label>Difficulty <input id="scenDiff"></label>
+      <label>Clear Condition <input id="scenCond"></label>
+      <label>Time Limit <input id="scenTime"></label>
+      <label>Rewards <input id="scenRew"></label>
+      <label>Penalty <input id="scenPen"></label>
+    `;
+  }
+}
+
+// --- Cole entry submit ---
+async function submitColeEntry(){
+  const type = document.getElementById("entryType").value;
+  let payload = {};
+
+  if(type === "message"){
+    payload = {
+      to: document.getElementById("msgTo").value,
+      type: "message",
+      scenarioNumber: "",
+      scenarioName: "",
+      category: "",
+      difficulty: "",
+      clearCondition: "",
+      timeLimit: "",
+      rewards: "",
+      penalty: "",
+      text: document.getElementById("msgText").value,
+      order: Date.now()
+    };
+  } else {
+    payload = {
+      to: document.getElementById("scenTo").value,
+      type: "scenario",
+      scenarioNumber: document.getElementById("scenNum").value,
+      scenarioName: document.getElementById("scenName").value,
+      category: document.getElementById("scenCat").value,
+      difficulty: document.getElementById("scenDiff").value,
+      clearCondition: document.getElementById("scenCond").value,
+      timeLimit: document.getElementById("scenTime").value,
+      rewards: document.getElementById("scenRew").value,
+      penalty: document.getElementById("scenPen").value,
+      text: "",
+      order: Date.now()
+    };
+  }
+
+  debug("Cole submitting: " + JSON.stringify(payload));
+
+  try {
+    await fetch("https://script.google.com/macros/s/AKfycbxQxeSiIWpwP96VYiognZePsGBlIyEFDwdxVf3u0eS3ksukcaPCeuabPUpt_jI7XpD20g/exec", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" },
+      mode: "no-cors"
+    });
+    debug("✅ Entry submitted to sheet (no-cors).");
+  } catch(err){
+    debug("❌ Exception while submitting entry: " + err);
   }
 }
 
