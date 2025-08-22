@@ -11,20 +11,6 @@
     button { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; background:#444; color:#fff; }
     button:hover { background:#666; }
     img { max-width:100%; display:block; }
-    #debug {
-      position: fixed;
-      bottom: 0;
-      right: 0;
-      max-width:400px;
-      max-height:200px;
-      overflow:auto;
-      background: rgba(0,0,0,0.7);
-      color: #0f0;
-      font-family: monospace;
-      font-size: 12px;
-      padding: 8px;
-      z-index: 9999;
-    }
     .text-overlay {
       position: absolute;
       top: 0;
@@ -54,7 +40,6 @@
   </div>
 
   <div id="feed"></div>
-  <div id="debug"></div>
 
 <script>
 // --- USERS ---
@@ -67,34 +52,22 @@ const USERS = {
 let currentUser = null;
 let lastData = "";
 
-// --- Debug ---
-function logDebug(msg){
-  const debug = document.getElementById("debug");
-  const time = new Date().toLocaleTimeString();
-  debug.innerText += `[${time}] ${msg}\n`;
-  debug.scrollTop = debug.scrollHeight;
-}
-
 // --- Login ---
 function login(){
   const u = document.getElementById("user").value.trim();
   const p = document.getElementById("pass").value;
-  logDebug(`Login attempt: user="${u}" pass="${p}"`);
   if(USERS[u] && USERS[u] === p){
     currentUser = u;
     document.getElementById("login").style.display = "none";
     document.getElementById("feed").style.display = "block";
-    logDebug(`Login successful: currentUser="${currentUser}"`);
     startAutoRefresh();
   } else {
     document.getElementById("msg").innerText = "❌ Invalid login";
-    logDebug("Login failed");
   }
 }
 
 // --- Auto-refresh feed ---
 function startAutoRefresh(){
-  logDebug("Starting feed auto-refresh...");
   loadFeed();
   setInterval(loadFeed, 15000);
 }
@@ -102,7 +75,6 @@ function startAutoRefresh(){
 // --- Fetch posts from Google Sheets (CSV) ---
 async function loadFeed(){
   const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/pub?output=csv";
-  logDebug("Fetching feed from Google Sheets (CSV)...");
   try {
     const res = await fetch(url);
     if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
@@ -135,17 +107,19 @@ async function loadFeed(){
         rewards: values[8]?.trim(),
         penalty: values[9]?.trim(),
         text: values[10]?.trim(),
-        time: values[11]?.trim()
+        order: parseInt(values[11]?.trim() || "0", 10)
       };
     });
 
-    posts.sort((a,b) => new Date(b.time) - new Date(a.time));
-    logDebug(`Fetched ${posts.length} posts from sheet`);
+    // Sort so higher order numbers appear higher up
+    posts.sort((a,b) => b.order - a.order);
 
     const dataStr = JSON.stringify(posts);
     if (dataStr !== lastData) { lastData = dataStr; renderFeed(posts); }
 
-  } catch(e) { logDebug(`Error loading feed: ${e}`); }
+  } catch(e) {
+    console.error("Error loading feed:", e);
+  }
 }
 
 // --- Render feed ---
@@ -171,7 +145,7 @@ function renderFeed(posts){
         img.src = "images/message.png";
         overlay.innerText = p.text || "";
         overlay.style.fontSize = "22px";
-        overlay.style.paddingTop = "180px";    // far down
+        overlay.style.paddingTop = "180px";    // down
         overlay.style.paddingLeft = "80px";    // slightly right
       } else if(p.type === "scenario"){
         img.src = "images/scenario.png";
@@ -190,7 +164,7 @@ REWARDS: ${p.rewards}
 PENALTY FOR FAILURE: ${p.penalty}`;
         overlay.style.fontSize = "18px";
         overlay.style.paddingTop = "120px";   // slightly down
-        overlay.style.paddingLeft = "140px";  // far right
+        overlay.style.paddingLeft = "140px";  // further right
       }
 
       container.appendChild(img);
@@ -198,8 +172,6 @@ PENALTY FOR FAILURE: ${p.penalty}`;
       feed.appendChild(container);
     }
   });
-
-  logDebug(`Rendered feed for user="${currentUser}"`);
 }
 </script>
 </body>
