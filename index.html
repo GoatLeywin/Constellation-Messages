@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <title>Star Stream</title>
+
+  <!-- Site icon (favicon) -->
   <link rel="icon" type="image/png" href="images/icon.png">
 
   <style>
@@ -13,12 +15,48 @@
     button { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; background:#444; color:#fff; }
     button:hover { background:#666; }
     img { max-width:100%; display:block; }
-    .text-overlay { position: absolute; top: 0; left: 0; bottom: 0; color: #fff; text-align: left; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; text-shadow: 2px 2px 4px #000; pointer-events: none; overflow-wrap: break-word; max-width: 70%; padding-right: 15%; }
+    .text-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      color: #fff;
+      text-align: left;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: monospace;
+      text-shadow: 2px 2px 4px #000;
+      pointer-events: none;
+      overflow-wrap: break-word;
+      max-width: 70%;
+      padding-right: 15%;
+    }
 
-    #refreshNotice { position: fixed; top: 20px; right: 30px; font-family: monospace; font-size: 14px; color: #fff; text-shadow: 1px 1px 3px #000; opacity: 0; transition: opacity 1s ease-in-out; pointer-events: none; z-index: 9999; }
+    #refreshNotice {
+      position: fixed;
+      top: 20px;
+      right: 30px;
+      font-family: monospace;
+      font-size: 14px;
+      color: #fff;
+      text-shadow: 1px 1px 3px #000;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+      pointer-events: none;
+      z-index: 9999;
+    }
 
     /* --- Cole control panel --- */
-    #colePanel { position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.9); padding: 12px; border-radius: 8px; display: none; z-index: 20000; width: 250px; }
+    #colePanel {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.9);
+      padding: 12px;
+      border-radius: 8px;
+      display: none;
+      z-index: 20000;
+    }
     #colePanel h3 { margin: 0 0 8px 0; font-size: 16px; }
     #colePanel label { display: block; margin-top: 6px; font-size: 13px; }
     #colePanel textarea { width: 200px; height: 60px; }
@@ -47,18 +85,19 @@
     </label>
     <div id="formFields"></div>
     <button onclick="submitColeEntry()">Submit</button>
-
-    <h3>🗑 Manage Entries</h3>
-    <select id="deleteDropdown" style="width:100%"></select>
-    <button onclick="deleteColeEntry()">Delete Selected</button>
   </div>
 
 <script>
 // --- USERS ---
-const USERS = { "Scott": "madhatter", "Dexter": "funk", "Kade": "KRKR-110108", "Cole": "ILoveMarley" };
+const USERS = {
+  "Scott": "madhatter",
+  "Dexter": "funk",
+  "Kade": "KRKR-110108",
+  "Cole": "ILoveMarley"
+};
+
 let currentUser = null;
 let lastData = "";
-let currentPosts = [];
 
 // --- Login ---
 function login(){
@@ -83,15 +122,30 @@ function login(){
 // --- Send row to Google Sheets ---
 async function logColeLogin(){
   const payload = {
-    to: "Cole", type: "login", scenarioNumber: "", scenarioName: "", category: "System",
-    difficulty: "", clearCondition: "", timeLimit: "", rewards: "", penalty: "",
-    text: "Cole logged in at " + new Date().toLocaleString(), order: Date.now()
+    to: "Cole",
+    type: "login",
+    scenarioNumber: "",
+    scenarioName: "",
+    category: "System",
+    difficulty: "",
+    clearCondition: "",
+    timeLimit: "",
+    rewards: "",
+    penalty: "",
+    text: "Cole logged in at " + new Date().toLocaleString(),
+    order: Date.now()
   };
+
   try {
-    await fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
-      method: "POST", body: JSON.stringify(payload), headers: { "Content-Type": "application/json" }, mode: "no-cors"
+    await fetch("https://script.google.com/macros/s/AKfycbxQxeSiIWpwP96VYiognZePsGBlIyEFDwdxVf3u0eS3ksukcaPCeuabPUpt_jI7XpD20g/exec", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" },
+      mode: "no-cors"
     });
-  } catch(err){ console.error(err); }
+  } catch(err) {
+    console.error("❌ Exception while logging Cole login: " + err);
+  }
 }
 
 // --- Cole form builder ---
@@ -100,9 +154,12 @@ function updateColeForm(){
   const form = document.getElementById("formFields");
   form.innerHTML = "";
 
-  if(type==="message"){
-    form.innerHTML = `<label>To: <input id="msgTo" value="all"></label><label>Text:<br><textarea id="msgText"></textarea></label>`;
-  } else {
+  if(type === "message"){
+    form.innerHTML = `
+      <label>To: <input id="msgTo" value="all"></label>
+      <label>Text:<br><textarea id="msgText"></textarea></label>
+    `;
+  } else if(type === "scenario"){
     form.innerHTML = `
       <label>To: <input id="scenTo" value="all"></label>
       <label>Scenario # <input id="scenNum"></label>
@@ -117,50 +174,53 @@ function updateColeForm(){
   }
 }
 
-// --- Submit Cole Entry ---
+// --- Cole entry submit ---
 async function submitColeEntry(){
   const type = document.getElementById("entryType").value;
-  let payload = type==="message" ? {
-    to: document.getElementById("msgTo").value,
-    type: "message",
-    scenarioNumber:"", scenarioName:"", category:"", difficulty:"", clearCondition:"", timeLimit:"", rewards:"", penalty:"",
-    text: document.getElementById("msgText").value,
-    order: Date.now()
-  } : {
-    to: document.getElementById("scenTo").value,
-    type: "scenario",
-    scenarioNumber: document.getElementById("scenNum").value,
-    scenarioName: document.getElementById("scenName").value,
-    category: document.getElementById("scenCat").value,
-    difficulty: document.getElementById("scenDiff").value,
-    clearCondition: document.getElementById("scenCond").value,
-    timeLimit: document.getElementById("scenTime").value,
-    rewards: document.getElementById("scenRew").value,
-    penalty: document.getElementById("scenPen").value,
-    text: "",
-    order: Date.now()
-  };
+  let payload = {};
+
+  if(type === "message"){
+    payload = {
+      to: document.getElementById("msgTo").value,
+      type: "message",
+      scenarioNumber: "",
+      scenarioName: "",
+      category: "",
+      difficulty: "",
+      clearCondition: "",
+      timeLimit: "",
+      rewards: "",
+      penalty: "",
+      text: document.getElementById("msgText").value,
+      order: Date.now()
+    };
+  } else {
+    payload = {
+      to: document.getElementById("scenTo").value,
+      type: "scenario",
+      scenarioNumber: document.getElementById("scenNum").value,
+      scenarioName: document.getElementById("scenName").value,
+      category: document.getElementById("scenCat").value,
+      difficulty: document.getElementById("scenDiff").value,
+      clearCondition: document.getElementById("scenCond").value,
+      timeLimit: document.getElementById("scenTime").value,
+      rewards: document.getElementById("scenRew").value,
+      penalty: document.getElementById("scenPen").value,
+      text: "",
+      order: Date.now()
+    };
+  }
 
   try {
-    await fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
-      method: "POST", body: JSON.stringify(payload), headers: { "Content-Type": "application/json" }, mode: "no-cors"
-    });
-  } catch(err){ console.error(err); }
-}
-
-// --- Delete Cole Entry ---
-async function deleteColeEntry(){
-  const sel = document.getElementById("deleteDropdown").value;
-  if(!sel) return;
-
-  try {
-    await fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
+    await fetch("https://script.google.com/macros/s/AKfycbxQxeSiIWpwP96VYiognZePsGBlIyEFDwdxVf3u0eS3ksukcaPCeuabPUpt_jI7XpD20g/exec", {
       method: "POST",
-      body: JSON.stringify({action:"delete", order: parseInt(sel,10)}),
+      body: JSON.stringify(payload),
       headers: { "Content-Type": "application/json" },
       mode: "no-cors"
     });
-  } catch(err){ console.error(err); }
+  } catch(err){
+    console.error("❌ Exception while submitting entry: " + err);
+  }
 }
 
 // --- Auto-refresh feed ---
@@ -169,22 +229,29 @@ function startAutoRefresh(){
   setInterval(loadFeed, 15000);
 }
 
-// --- Load Feed ---
+// --- Fetch posts from Google Sheets (CSV) ---
 async function loadFeed(){
   const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/pub?gid=0&single=true&output=csv";
   try {
-    const res = await fetch(url); if(!res.ok) throw new Error(res.status);
+    const res = await fetch(url);
+    if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
     const csvText = await res.text();
-    const lines = csvText.trim().split("\n"); lines.shift();
-    currentPosts = lines.map(line=>{
-      const values=[]; let cur=''; let inQuotes=false;
-      for(let i=0;i<line.length;i++){
-        const c=line[i];
-        if(c=='"' && line[i+1]=='"'){ cur+='"'; i++; }
-        else if(c=='"'){ inQuotes=!inQuotes; }
-        else if(c==',' && !inQuotes){ values.push(cur); cur=''; }
-        else { cur+=c; }
-      } values.push(cur);
+    const lines = csvText.trim().split("\n");
+    lines.shift(); // remove header
+
+    const posts = lines.map(line => {
+      const values = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"' && line[i+1] === '"') { current += '"'; i++; }
+        else if (char === '"') { inQuotes = !inQuotes; }
+        else if (char === ',' && !inQuotes) { values.push(current); current = ''; }
+        else { current += char; }
+      }
+      values.push(current);
+
       return {
         to: values[0]?.trim(),
         type: values[1]?.trim(),
@@ -197,29 +264,52 @@ async function loadFeed(){
         rewards: values[8]?.trim(),
         penalty: values[9]?.trim(),
         text: values[10]?.trim(),
-        order: parseInt(values[11]||"0",10)
+        order: parseInt(values[11]?.trim() || "0", 10)
       };
     });
-    currentPosts.sort((a,b)=>b.order-a.order);
-    renderFeed(currentPosts);
-    populateDeleteDropdown();
-    showRefreshNotice();
-  } catch(e){ console.error(e); }
+
+    posts.sort((a,b) => b.order - a.order);
+
+    const dataStr = JSON.stringify(posts);
+    if (dataStr !== lastData) { 
+      lastData = dataStr; 
+      renderFeed(posts); 
+      showRefreshNotice();
+    }
+
+  } catch(e) {
+    console.error("❌ Error loading feed: " + e);
+  }
 }
 
-// --- Render Feed ---
+// --- Render feed ---
 function renderFeed(posts){
-  const feed=document.getElementById("feed"); feed.innerHTML="";
-  posts.forEach(p=>{
-    if(p.to==="all" || p.to===currentUser || currentUser==="Cole"){
-      const container=document.createElement("div");
-      container.style.position="relative"; container.style.margin="20px auto"; container.style.textAlign="center";
+  const feed = document.getElementById("feed");
+  feed.innerHTML = "";
 
-      const img=document.createElement("img"); img.style.width="100%"; img.style.display="block";
-      const overlay=document.createElement("div"); overlay.className="text-overlay";
+  posts.forEach(p => {
+    if(p.to === "all" || p.to === currentUser || currentUser === "Cole"){
+      const container = document.createElement("div");
+      container.style.position = "relative";
+      container.style.margin = "20px auto";
+      container.style.textAlign = "center";
 
-      if(p.type==="message"){ img.src="images/message.png"; overlay.innerText=p.text||""; overlay.style.fontSize="22px"; overlay.style.paddingTop="180px"; overlay.style.paddingLeft="80px"; }
-      else { img.src="images/scenario.png"; overlay.innerText=`< ${p.category} Scenario #${p.scenarioNumber} – ${p.scenarioName} >
+      const img = document.createElement("img");
+      img.style.width = "100%";
+      img.style.display = "block";
+
+      const overlay = document.createElement("div");
+      overlay.className = "text-overlay";
+
+      if(p.type === "message"){
+        img.src = "images/message.png";
+        overlay.innerText = p.text || "";
+        overlay.style.fontSize = "22px";
+        overlay.style.paddingTop = "180px";    
+        overlay.style.paddingLeft = "80px";    
+      } else if(p.type === "scenario"){
+        img.src = "images/scenario.png";
+        overlay.innerText = `< ${p.category} Scenario #${p.scenarioNumber} – ${p.scenarioName} >
 
 CATEGORY: ${p.category}
 
@@ -231,31 +321,24 @@ TIME LIMIT: ${p.timeLimit}
 
 REWARDS: ${p.rewards}
 
-PENALTY FOR FAILURE: ${p.penalty}`; overlay.style.fontSize="18px"; overlay.style.paddingTop="120px"; overlay.style.paddingLeft="140px"; }
+PENALTY FOR FAILURE: ${p.penalty}`;
+        overlay.style.fontSize = "18px";
+        overlay.style.paddingTop = "120px";   
+        overlay.style.paddingLeft = "140px";  
+      }
 
-      container.appendChild(img); container.appendChild(overlay); feed.appendChild(container);
+      container.appendChild(img);
+      container.appendChild(overlay);
+      feed.appendChild(container);
     }
   });
 }
 
-// --- Populate Delete Dropdown ---
-function populateDeleteDropdown(){
-  if(currentUser!=="Cole") return;
-  const sel=document.getElementById("deleteDropdown");
-  sel.innerHTML="";
-  currentPosts.forEach(p=>{
-    const option=document.createElement("option");
-    option.value=p.order;
-    const label=p.type==="message" ? `${p.type}: ${p.text.substring(0,20)}` : `${p.type}: ${p.scenarioName}`;
-    option.innerText=label;
-    sel.appendChild(option);
-  });
-}
-
-// --- Refresh Notice ---
+// --- Fade-in/out refresh notice ---
 function showRefreshNotice(){
-  const notice=document.getElementById("refreshNotice");
-  notice.style.opacity="1"; setTimeout(()=>{ notice.style.opacity="0"; },2000);
+  const notice = document.getElementById("refreshNotice");
+  notice.style.opacity = "1";
+  setTimeout(() => { notice.style.opacity = "0"; }, 2000);
 }
 </script>
 </body>
