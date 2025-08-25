@@ -120,12 +120,24 @@ function startAutoRefresh(){
 // --- Fetch posts from Google Sheets (GVIZ JSON) ---
 async function loadFeed(){
   const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/gviz/tq?tqx=out:json";
-  logDebug("📡 Fetching feed...");
+
+  console.log("[loadFeed] Fetching from:", url);
+
   try {
     const res = await fetch(url);
     const text = await res.text();
-    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);?$/)[1]);
-    logDebug("📥 Feed data received");
+
+    console.log("[loadFeed] Raw response text:");
+    console.log(text.slice(0, 500)); // Print first 500 chars for inspection
+
+    const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);?$/);
+    if (!match) {
+      console.error("❌ Match failed. Feed data is not in expected format.");
+      return;
+    }
+
+    const json = JSON.parse(match[1]);
+    console.log("[loadFeed] Parsed JSON:", json);
 
     const rows = json.table.rows.map(row => {
       const c = row.c;
@@ -145,21 +157,20 @@ async function loadFeed(){
       };
     });
 
-    logDebug(`✅ Parsed ${rows.length} posts`);
     rows.sort((a,b) => b.order - a.order);
 
     const dataStr = JSON.stringify(rows);
     if (dataStr !== lastData) {
       lastData = dataStr;
+      console.log(`[loadFeed] 🔄 Feed changed. Rendering ${rows.length} items.`);
       renderFeed(rows);
       showRefreshNotice();
-      logDebug("🔃 Feed updated");
     } else {
-      logDebug("🔁 No change in feed data");
+      console.log("[loadFeed] ✅ Feed unchanged.");
     }
 
   } catch(e) {
-    logDebug("❌ Error loading feed: " + e);
+    console.error("❌ Error loading feed:", e);
   }
 }
 
