@@ -41,6 +41,21 @@
       pointer-events: none;
       z-index: 9999;
     }
+    #debug {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-height: 200px;
+      overflow-y: auto;
+      background: #222;
+      color: #0f0;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 10px;
+      border-top: 1px solid #333;
+      z-index: 9999;
+    }
   </style>
 </head>
 <body>
@@ -55,8 +70,18 @@
   <div id="feed"></div>
   <div id="refreshNotice">⟳ feed refreshed</div>
   <div id="submitNotice">✔ entry submitted</div>
+  <div id="debug"></div>
 
 <script>
+// --- DEBUG ---
+function logDebug(message) {
+  const debug = document.getElementById("debug");
+  const timestamp = new Date().toISOString().substr(11, 8);
+  debug.innerText += `[${timestamp}] ${message}\n`;
+  debug.scrollTop = debug.scrollHeight;
+  console.log(message);
+}
+
 // --- USERS ---
 const USERS = {
   "Scott": "madhatter",
@@ -72,18 +97,22 @@ let lastData = "";
 function login(){
   const u = document.getElementById("user").value.trim();
   const p = document.getElementById("pass").value;
+  logDebug(`Attempt login: user="${u}"`);
   if(USERS[u] && USERS[u] === p){
     currentUser = u;
+    logDebug(`✅ Login success: ${u}`);
     document.getElementById("login").style.display = "none";
     document.getElementById("feed").style.display = "block";
     startAutoRefresh();
   } else {
+    logDebug("❌ Login failed");
     document.getElementById("msg").innerText = "❌ Invalid login";
   }
 }
 
 // --- Auto-refresh feed ---
 function startAutoRefresh(){
+  logDebug("🔁 Starting auto-refresh");
   loadFeed();
   setInterval(loadFeed, 15000);
 }
@@ -91,11 +120,12 @@ function startAutoRefresh(){
 // --- Fetch posts from Google Sheets (GVIZ JSON) ---
 async function loadFeed(){
   const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/gviz/tq?tqx=out:json";
-
+  logDebug("📡 Fetching feed...");
   try {
     const res = await fetch(url);
     const text = await res.text();
     const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);?$/)[1]);
+    logDebug("📥 Feed data received");
 
     const rows = json.table.rows.map(row => {
       const c = row.c;
@@ -115,6 +145,7 @@ async function loadFeed(){
       };
     });
 
+    logDebug(`✅ Parsed ${rows.length} posts`);
     rows.sort((a,b) => b.order - a.order);
 
     const dataStr = JSON.stringify(rows);
@@ -122,10 +153,13 @@ async function loadFeed(){
       lastData = dataStr;
       renderFeed(rows);
       showRefreshNotice();
+      logDebug("🔃 Feed updated");
+    } else {
+      logDebug("🔁 No change in feed data");
     }
 
   } catch(e) {
-    console.error("❌ Error loading feed: " + e);
+    logDebug("❌ Error loading feed: " + e);
   }
 }
 
@@ -133,9 +167,11 @@ async function loadFeed(){
 function renderFeed(posts){
   const feed = document.getElementById("feed");
   feed.innerHTML = "";
+  let shown = 0;
 
   posts.forEach(p => {
     if(p.to === "all" || p.to === currentUser || currentUser === "Cole"){
+      shown++;
       const container = document.createElement("div");
       container.style.position = "relative";
       container.style.margin = "20px auto";
@@ -179,6 +215,8 @@ PENALTY FOR FAILURE: ${p.penalty}`;
       feed.appendChild(container);
     }
   });
+
+  logDebug(`🖼️ Rendered ${shown} of ${posts.length} posts`);
 }
 
 // --- Fade-in/out refresh notice ---
