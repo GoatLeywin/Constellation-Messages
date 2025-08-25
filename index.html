@@ -119,6 +119,31 @@ function login(){
   }
 }
 
+// --- Update Cole panel form dynamically ---
+function updateColeForm(){
+  const type = document.getElementById("entryType").value;
+  const form = document.getElementById("formFields");
+
+  if(type === "message"){
+    form.innerHTML = `
+      <label>To: <input id="msgTo" placeholder="Recipient (or 'all')" /></label>
+      <label>Message:<br><textarea id="msgText"></textarea></label>
+    `;
+  } else {
+    form.innerHTML = `
+      <label>To: <input id="scenTo" placeholder="Recipient (or 'all')" /></label>
+      <label>Scenario #:<input id="scenNum" /></label>
+      <label>Name:<input id="scenName" /></label>
+      <label>Category:<input id="scenCat" /></label>
+      <label>Difficulty:<input id="scenDiff" /></label>
+      <label>Clear Condition:<input id="scenCond" /></label>
+      <label>Time Limit:<input id="scenTime" /></label>
+      <label>Rewards:<input id="scenRew" /></label>
+      <label>Penalty:<input id="scenPen" /></label>
+    `;
+  }
+}
+
 // --- Cole entry submit ---
 async function submitColeEntry(){
   const type = document.getElementById("entryType").value;
@@ -164,9 +189,7 @@ async function submitColeEntry(){
       mode: "no-cors"
     });
 
-    // --- Confirmation and clear form ---
     alert("✅ Entry submitted successfully!");
-    // Clear the form fields
     if(type === "message"){
       document.getElementById("msgText").value = "";
     } else {
