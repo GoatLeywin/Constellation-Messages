@@ -117,7 +117,7 @@ async function loadFeed(){
       return {
         to: values[0]?.trim(),
         type: values[1]?.trim(),
-        scenarioNumber: values[2]?.trim(),
+        subCategory: values[2]?.trim(),
         scenarioName: values[3]?.trim(),
         category: values[4]?.trim(),
         difficulty: values[5]?.trim(),
@@ -171,7 +171,7 @@ function renderFeed(posts){
         overlay.style.paddingLeft = "80px";    
       } else if(p.type === "scenario"){
         img.src = "images/scenario.png";
-        overlay.innerText = `< ${p.category} Scenario #${p.scenarioNumber} – ${p.scenarioName} >
+        overlay.innerText = `< ${p.category} Scenario #${p.subCategory} – ${p.scenarioName} >
 
 CATEGORY: ${p.category}
 
