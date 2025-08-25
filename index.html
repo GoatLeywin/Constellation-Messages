@@ -32,7 +32,7 @@
       padding-right: 15%;
     }
 
-    #refreshNotice {
+    #refreshNotice, #submitNotice {
       position: fixed;
       top: 20px;
       right: 30px;
@@ -49,7 +49,7 @@
     /* --- Cole control panel --- */
     #colePanel {
       position: fixed;
-      top: 20px;
+      bottom: 20px;
       right: 20px;
       background: rgba(0,0,0,0.9);
       padding: 12px;
@@ -73,6 +73,7 @@
 
   <div id="feed"></div>
   <div id="refreshNotice">⟳ feed refreshed</div>
+  <div id="submitNotice">✔ entry submitted</div>
 
   <!-- Cole control panel -->
   <div id="colePanel">
@@ -218,6 +219,7 @@ async function submitColeEntry(){
       headers: { "Content-Type": "application/json" },
       mode: "no-cors"
     });
+    showSubmitNotice();
   } catch(err){
     console.error("❌ Exception while submitting entry: " + err);
   }
@@ -337,6 +339,13 @@ PENALTY FOR FAILURE: ${p.penalty}`;
 // --- Fade-in/out refresh notice ---
 function showRefreshNotice(){
   const notice = document.getElementById("refreshNotice");
+  notice.style.opacity = "1";
+  setTimeout(() => { notice.style.opacity = "0"; }, 2000);
+}
+
+// --- Fade-in/out submit notice ---
+function showSubmitNotice(){
+  const notice = document.getElementById("submitNotice");
   notice.style.opacity = "1";
   setTimeout(() => { notice.style.opacity = "0"; }, 2000);
 }
