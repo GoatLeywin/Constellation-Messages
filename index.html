@@ -96,7 +96,7 @@ async function loadFeed(){
     if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
     const csvText = await res.text();
     const lines = csvText.trim().split("\n");
-    lines.shift();
+    lines.shift(); // remove header row
 
     const posts = lines.map(line => {
       const values = [];
@@ -110,6 +110,9 @@ async function loadFeed(){
         else { current += char; }
       }
       values.push(current);
+
+      // Skip if row is completely empty
+      if (values.every(v => !v.trim())) return null;
 
       return {
         to: values[0]?.trim(),
@@ -125,7 +128,7 @@ async function loadFeed(){
         text: values[10]?.trim(),
         order: parseInt(values[11]?.trim() || "0", 10)
       };
-    });
+    }).filter(Boolean); // remove nulls
 
     posts.sort((a,b) => b.order - a.order);
 
