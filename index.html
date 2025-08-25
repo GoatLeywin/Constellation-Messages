@@ -3,10 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Star Stream</title>
-
-  <!-- Site icon (favicon) -->
   <link rel="icon" type="image/png" href="images/icon.png">
-
   <style>
     body { font-family: sans-serif; background:#111; color:#eee; margin:0; }
     #login { max-width:400px; margin:100px auto; text-align:center; }
@@ -31,7 +28,6 @@
       max-width: 70%;
       padding-right: 15%;
     }
-
     #refreshNotice, #submitNotice {
       position: fixed;
       top: 20px;
@@ -45,21 +41,6 @@
       pointer-events: none;
       z-index: 9999;
     }
-
-    /* --- Cole control panel --- */
-    #colePanel {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: rgba(0,0,0,0.9);
-      padding: 12px;
-      border-radius: 8px;
-      display: none;
-      z-index: 20000;
-    }
-    #colePanel h3 { margin: 0 0 8px 0; font-size: 16px; }
-    #colePanel label { display: block; margin-top: 6px; font-size: 13px; }
-    #colePanel textarea { width: 200px; height: 60px; }
   </style>
 </head>
 <body>
@@ -74,19 +55,6 @@
   <div id="feed"></div>
   <div id="refreshNotice">⟳ feed refreshed</div>
   <div id="submitNotice">✔ entry submitted</div>
-
-  <!-- Cole control panel -->
-  <div id="colePanel">
-    <h3>📝 New Entry</h3>
-    <label>Type:
-      <select id="entryType" onchange="updateColeForm()">
-        <option value="message">Message</option>
-        <option value="scenario">Scenario</option>
-      </select>
-    </label>
-    <div id="formFields"></div>
-    <button onclick="submitColeEntry()">Submit</button>
-  </div>
 
 <script>
 // --- USERS ---
@@ -109,96 +77,15 @@ function login(){
     document.getElementById("login").style.display = "none";
     document.getElementById("feed").style.display = "block";
     startAutoRefresh();
-
-    if(currentUser === "Cole"){
-      document.getElementById("colePanel").style.display = "block";
-      updateColeForm();
-    }
   } else {
     document.getElementById("msg").innerText = "❌ Invalid login";
-  }
-}
-
-// --- Cole form builder ---
-function updateColeForm(){
-  const type = document.getElementById("entryType").value;
-  const form = document.getElementById("formFields");
-  form.innerHTML = "";
-
-  if(type === "message"){
-    form.innerHTML = `
-      <label>To: <input id="msgTo" value="all"></label>
-      <label>Text:<br><textarea id="msgText"></textarea></label>
-    `;
-  } else if(type === "scenario"){
-    form.innerHTML = `
-      <label>To: <input id="scenTo" value="all"></label>
-      <label>Scenario # <input id="scenNum"></label>
-      <label>Name <input id="scenName"></label>
-      <label>Category <input id="scenCat"></label>
-      <label>Difficulty <input id="scenDiff"></label>
-      <label>Clear Condition <input id="scenCond"></label>
-      <label>Time Limit <input id="scenTime"></label>
-      <label>Rewards <input id="scenRew"></label>
-      <label>Penalty <input id="scenPen"></label>
-    `;
-  }
-}
-
-// --- Cole entry submit ---
-async function submitColeEntry(){
-  const type = document.getElementById("entryType").value;
-  let payload = {};
-
-  if(type === "message"){
-    payload = {
-      to: document.getElementById("msgTo").value,
-      type: "message",
-      scenarioNumber: "",
-      scenarioName: "",
-      category: "",
-      difficulty: "",
-      clearCondition: "",
-      timeLimit: "",
-      rewards: "",
-      penalty: "",
-      text: document.getElementById("msgText").value,
-      order: Date.now()
-    };
-  } else {
-    payload = {
-      to: document.getElementById("scenTo").value,
-      type: "scenario",
-      scenarioNumber: document.getElementById("scenNum").value,
-      scenarioName: document.getElementById("scenName").value,
-      category: document.getElementById("scenCat").value,
-      difficulty: document.getElementById("scenDiff").value,
-      clearCondition: document.getElementById("scenCond").value,
-      timeLimit: document.getElementById("scenTime").value,
-      rewards: document.getElementById("scenRew").value,
-      penalty: document.getElementById("scenPen").value,
-      text: "",
-      order: Date.now()
-    };
-  }
-
-  try {
-    await fetch("https://script.google.com/macros/s/AKfycbxQxeSiIWpwP96VYiognZePsGBlIyEFDwdxVf3u0eS3ksukcaPCeuabPUpt_jI7XpD20g/exec", {
-      method: "POST",
-      body: JSON.stringify(payload),
-      headers: { "Content-Type": "application/json" },
-      mode: "no-cors"
-    });
-    showSubmitNotice();
-  } catch(err){
-    console.error("❌ Exception while submitting entry: " + err);
   }
 }
 
 // --- Auto-refresh feed ---
 function startAutoRefresh(){
   loadFeed();
-  setInterval(loadFeed, 5000); // update more often (every 5 seconds)
+  setInterval(loadFeed, 15000);
 }
 
 // --- Fetch posts from Google Sheets (CSV) ---
@@ -209,7 +96,7 @@ async function loadFeed(){
     if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
     const csvText = await res.text();
     const lines = csvText.trim().split("\n");
-    lines.shift(); // remove header
+    lines.shift();
 
     const posts = lines.map(line => {
       const values = [];
