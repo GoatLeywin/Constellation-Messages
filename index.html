@@ -112,40 +112,10 @@ function login(){
 
     if(currentUser === "Cole"){
       document.getElementById("colePanel").style.display = "block";
-      logColeLogin();
       updateColeForm();
     }
   } else {
     document.getElementById("msg").innerText = "❌ Invalid login";
-  }
-}
-
-// --- Send row to Google Sheets ---
-async function logColeLogin(){
-  const payload = {
-    to: "Cole",
-    type: "login",
-    scenarioNumber: "",
-    scenarioName: "",
-    category: "System",
-    difficulty: "",
-    clearCondition: "",
-    timeLimit: "",
-    rewards: "",
-    penalty: "",
-    text: "Cole logged in at " + new Date().toLocaleString(),
-    order: Date.now()
-  };
-
-  try {
-    await fetch("https://script.google.com/macros/s/AKfycbxQxeSiIWpwP96VYiognZePsGBlIyEFDwdxVf3u0eS3ksukcaPCeuabPUpt_jI7XpD20g/exec", {
-      method: "POST",
-      body: JSON.stringify(payload),
-      headers: { "Content-Type": "application/json" },
-      mode: "no-cors"
-    });
-  } catch(err) {
-    console.error("❌ Exception while logging Cole login: " + err);
   }
 }
 
@@ -228,7 +198,7 @@ async function submitColeEntry(){
 // --- Auto-refresh feed ---
 function startAutoRefresh(){
   loadFeed();
-  setInterval(loadFeed, 15000);
+  setInterval(loadFeed, 5000); // update more often (every 5 seconds)
 }
 
 // --- Fetch posts from Google Sheets (CSV) ---
