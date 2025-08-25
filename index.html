@@ -88,51 +88,39 @@ function startAutoRefresh(){
   setInterval(loadFeed, 15000);
 }
 
-// --- Fetch posts from Google Sheets (CSV) ---
+// --- Fetch posts from Google Sheets (GVIZ JSON) ---
 async function loadFeed(){
-  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/pub?gid=0&single=true&output=csv";
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4Grw3tRlqGbesjOvBSJ74P-dWTId_l34k4tXiuXEmJQUo-qi-f67C3tllucwzOzFLaPaP9CPe4i8D/gviz/tq?tqx=out:json";
+
   try {
     const res = await fetch(url);
-    if(!res.ok) throw new Error(`HTTP error: ${res.status}`);
-    const csvText = await res.text();
-    const lines = csvText.trim().split("\n");
-    lines.shift();
+    const text = await res.text();
+    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);?$/)[1]);
 
-    const posts = lines.map(line => {
-      const values = [];
-      let current = '';
-      let inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"' && line[i+1] === '"') { current += '"'; i++; }
-        else if (char === '"') { inQuotes = !inQuotes; }
-        else if (char === ',' && !inQuotes) { values.push(current); current = ''; }
-        else { current += char; }
-      }
-      values.push(current);
-
+    const rows = json.table.rows.map(row => {
+      const c = row.c;
       return {
-        to: values[0]?.trim(),
-        type: values[1]?.trim(),
-        scenarioNumber: values[2]?.trim(),
-        scenarioName: values[3]?.trim(),
-        category: values[4]?.trim(),
-        difficulty: values[5]?.trim(),
-        clearCondition: values[6]?.trim(),
-        timeLimit: values[7]?.trim(),
-        rewards: values[8]?.trim(),
-        penalty: values[9]?.trim(),
-        text: values[10]?.trim(),
-        order: parseInt(values[11]?.trim() || "0", 10)
+        to: c[0]?.v || "",
+        type: c[1]?.v || "",
+        scenarioNumber: c[2]?.v || "",
+        scenarioName: c[3]?.v || "",
+        category: c[4]?.v || "",
+        difficulty: c[5]?.v || "",
+        clearCondition: c[6]?.v || "",
+        timeLimit: c[7]?.v || "",
+        rewards: c[8]?.v || "",
+        penalty: c[9]?.v || "",
+        text: c[10]?.v || "",
+        order: parseInt(c[11]?.v) || 0
       };
     });
 
-    posts.sort((a,b) => b.order - a.order);
+    rows.sort((a,b) => b.order - a.order);
 
-    const dataStr = JSON.stringify(posts);
-    if (dataStr !== lastData) { 
-      lastData = dataStr; 
-      renderFeed(posts); 
+    const dataStr = JSON.stringify(rows);
+    if (dataStr !== lastData) {
+      lastData = dataStr;
+      renderFeed(rows);
       showRefreshNotice();
     }
 
